@@ -1,13 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "_comment_cron": "Vercel Cron runs in UTC. 04:00 UTC ≈ 07:00 IDT (summer) / 06:00 IST (winter). We aim for early-morning Israel time year-round; exact hour drifts by 1h across DST.",
   "crons": [
     {
       "path": "/api/cron/daily-briefing",
-      "schedule": "0 5 * * *"
+      "schedule": "0 4 * * *"
     },
     {
       "path": "/api/cron/weekly-briefing",
-      "schedule": "0 5 * * 0"
+      "schedule": "0 4 * * 0"
     }
   ]
 }
