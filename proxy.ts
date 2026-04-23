@@ -9,7 +9,7 @@ const PUBLIC_PATHS = ["/", "/login", "/api/auth"];
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
+    (p) => pathname === p || pathname.startsWith(p + "/"),
   );
   const isAuth = !!req.auth;
 

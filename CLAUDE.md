@@ -33,7 +33,7 @@
 - [lib/auth.ts](lib/auth.ts) — NextAuth עם Google scopes (Gmail+Drive+Calendar).
 - [app/api/chat/route.ts](app/api/chat/route.ts) — core של אינטראקציית הסוכן.
 - [app/layout.tsx](app/layout.tsx) — RTL root + Heebo + ThemeProvider.
-- [middleware.ts](middleware.ts) — auth guard על כל `/dashboard/*`.
+- [proxy.ts](proxy.ts) — auth guard על כל `/dashboard/*` (Next.js 16 rename מ-middleware).
 
 ## אין ל-commit
 - `.env.local`, `.env`, כל קובץ עם secrets.
