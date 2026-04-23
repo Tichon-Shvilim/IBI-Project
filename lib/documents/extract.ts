@@ -1,4 +1,9 @@
-import { PDFParse } from "pdf-parse";
+// pdf-parse@1 is CommonJS with a default function. In Next/Turbopack the
+// usual `import pdf from "pdf-parse"` silently pulls the package's index.js
+// which tries to read a test fixture at module load; using require from the
+// lib entry skips that and avoids DOMMatrix polyfills v2 needed.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse: (b: Buffer) => Promise<{ text: string }> = require("pdf-parse/lib/pdf-parse.js");
 import mammoth from "mammoth";
 import * as xlsx from "xlsx";
 
@@ -16,13 +21,8 @@ export async function extractText({
   const lower = name.toLowerCase();
 
   if (mimeType === "application/pdf" || lower.endsWith(".pdf")) {
-    const parser = new PDFParse({ data: new Uint8Array(buffer) });
-    try {
-      const res = await parser.getText();
-      return (res.text ?? "").trim();
-    } finally {
-      await parser.destroy().catch(() => {});
-    }
+    const res = await pdfParse(buffer);
+    return (res.text ?? "").trim();
   }
 
   if (
