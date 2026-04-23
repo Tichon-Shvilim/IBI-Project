@@ -16,6 +16,11 @@ export default {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Single-user app: if a User row already exists with the same email
+      // (e.g., created via prisma seed), auto-link the new OAuth Account to
+      // it instead of rejecting with OAuthAccountNotLinked. Safe here because
+      // Nati owns both the seeded email and the Google identity.
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           scope: GOOGLE_SCOPES,
