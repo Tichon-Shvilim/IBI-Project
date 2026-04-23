@@ -1,5 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from "ai";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildAgentTools } from "@/lib/ai/tools";
@@ -45,6 +45,10 @@ export async function POST(req: Request) {
     system: agent.systemPrompt,
     messages: modelMessages,
     tools: buildAgentTools({ agentId: agent.id, userId: session.user.id }),
+    // Allow multi-step: agent calls tools, sees results, then produces
+    // final text. Without this, streamText stops after the first step
+    // (tool call only, no assistant reply).
+    stopWhen: stepCountIs(8),
     onFinish: async ({ text, usage }) => {
       const lastUser = [...messages].reverse().find((m) => m.role === "user");
       if (lastUser) {
