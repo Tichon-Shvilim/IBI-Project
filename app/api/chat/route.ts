@@ -56,14 +56,24 @@ export async function POST(req: Request) {
           },
         });
       }
-      await prisma.message.create({
-        data: {
-          conversationId: convId!,
-          role: "assistant",
-          content: text,
-          tokensIn: usage?.inputTokens,
-          tokensOut: usage?.outputTokens,
-        },
+      // Only persist assistant turn when it actually produced text. Pure
+      // tool-use turns (no textual reply) would otherwise pollute history
+      // with empty rows that render as blank bubbles.
+      if (text && text.trim().length > 0) {
+        await prisma.message.create({
+          data: {
+            conversationId: convId!,
+            role: "assistant",
+            content: text,
+            tokensIn: usage?.inputTokens,
+            tokensOut: usage?.outputTokens,
+          },
+        });
+      }
+      // Bump conversation updatedAt so it floats to the top of the sidebar.
+      await prisma.conversation.update({
+        where: { id: convId! },
+        data: { updatedAt: new Date() },
       });
     },
   });
