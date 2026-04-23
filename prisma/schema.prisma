@@ -72,7 +72,7 @@ model Agent {
   name         String
   description  String
   systemPrompt String  @db.Text
-  model        String  @default("claude-opus-4-7")
+  model        String  @default("claude-sonnet-4-6")
   config       Json    @default("{}")
   isActive     Boolean @default(true)
   createdAt    DateTime @default(now())

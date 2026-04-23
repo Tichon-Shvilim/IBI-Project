@@ -24,11 +24,14 @@ async function main() {
       name: "יועץ אסטרטגי",
       description: "IBI Capital — חדירה לשוק החרדי",
       systemPrompt: STRATEGIC_ADVISOR_SYSTEM_PROMPT,
-      model: "claude-opus-4-7",
+      model: "claude-sonnet-4-6",
       config: { temperature: 0.3 },
       isActive: true,
     },
-    update: { systemPrompt: STRATEGIC_ADVISOR_SYSTEM_PROMPT },
+    update: {
+      systemPrompt: STRATEGIC_ADVISOR_SYSTEM_PROMPT,
+      model: "claude-sonnet-4-6",
+    },
   });
 
   const keyPeople = [
