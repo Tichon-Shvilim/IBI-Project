@@ -22,10 +22,10 @@ export default function Home() {
             כניסה למערכת
           </Link>
           <Link
-            href="/dashboard"
+            href="/demo"
             className="inline-flex items-center justify-center h-12 px-6 rounded-lg border border-border text-foreground font-medium hover:bg-surface transition-colors"
           >
-            לוח בקרה
+            תצוגה לדוגמה
           </Link>
         </div>
 
