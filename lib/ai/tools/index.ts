@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { readGmail } from "@/lib/integrations/gmail";
+import { readGmail, sendGmail } from "@/lib/integrations/gmail";
 
 export function buildAgentTools({
   agentId,
@@ -204,6 +204,28 @@ export function buildAgentTools({
           name: d.name,
           excerpt: (d.extractedText ?? "").slice(0, 500),
         }));
+      },
+    }),
+
+    send_gmail: tool({
+      description:
+        "שלח מייל מחשבון ה-Gmail של נתי. חובה לקרוא ל-verify_with_user לפני שליחה — המשתמש חייב לאשר נמען/נושא/תוכן. UTF-8/עברית נתמך.",
+      inputSchema: z.object({
+        to: z.string().describe("כתובת מייל של הנמען"),
+        subject: z.string().describe("נושא"),
+        body: z.string().describe("תוכן המייל (טקסט פשוט)"),
+        cc: z.string().optional(),
+        bcc: z.string().optional(),
+        replyTo: z.string().optional(),
+      }),
+      execute: async ({ to, subject, body, cc, bcc, replyTo }) => {
+        try {
+          const result = await sendGmail({ userId, to, subject, body, cc, bcc, replyTo });
+          return { sent: true, ...result };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "unknown_error";
+          return { sent: false, error: msg };
+        }
       },
     }),
 

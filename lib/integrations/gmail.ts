@@ -88,3 +88,82 @@ function decodeBase64Url(s: string): string {
     return "";
   }
 }
+
+export async function sendGmail({
+  userId,
+  to,
+  subject,
+  body,
+  cc,
+  bcc,
+  replyTo,
+}: {
+  userId: string;
+  to: string;
+  subject: string;
+  body: string;
+  cc?: string;
+  bcc?: string;
+  replyTo?: string;
+}): Promise<{ id: string; threadId: string }> {
+  const auth = await googleClientForUser(userId);
+  const gmail = google.gmail({ version: "v1", auth });
+
+  const mime = buildMimeMessage({ to, subject, body, cc, bcc, replyTo });
+  const raw = Buffer.from(mime, "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const res = await gmail.users.messages.send({
+    userId: "me",
+    requestBody: { raw },
+  });
+
+  return {
+    id: res.data.id ?? "",
+    threadId: res.data.threadId ?? "",
+  };
+}
+
+function encodeHeader(value: string): string {
+  const hasNonAscii = /[^\x00-\x7F]/.test(value);
+  if (!hasNonAscii) return value;
+  const b64 = Buffer.from(value, "utf-8").toString("base64");
+  return `=?UTF-8?B?${b64}?=`;
+}
+
+function buildMimeMessage({
+  to,
+  subject,
+  body,
+  cc,
+  bcc,
+  replyTo,
+}: {
+  to: string;
+  subject: string;
+  body: string;
+  cc?: string;
+  bcc?: string;
+  replyTo?: string;
+}): string {
+  const headers: string[] = [
+    `To: ${to}`,
+    cc ? `Cc: ${cc}` : "",
+    bcc ? `Bcc: ${bcc}` : "",
+    replyTo ? `Reply-To: ${replyTo}` : "",
+    `Subject: ${encodeHeader(subject)}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: base64",
+  ].filter(Boolean);
+
+  const encodedBody = Buffer.from(body, "utf-8")
+    .toString("base64")
+    .match(/.{1,76}/g)
+    ?.join("\r\n") ?? "";
+
+  return headers.join("\r\n") + "\r\n\r\n" + encodedBody;
+}
