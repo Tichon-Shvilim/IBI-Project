@@ -35,10 +35,13 @@ export async function POST(req: Request) {
       name: file.name,
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[upload] extract failed:", file.name, file.type, buffer.byteLength, message);
     return NextResponse.json(
       {
         error: "extract_failed",
-        message: err instanceof Error ? err.message : "unknown",
+        hint: `חילוץ טקסט נכשל עבור ${file.name}: ${message}`,
+        message,
       },
       { status: 422 },
     );

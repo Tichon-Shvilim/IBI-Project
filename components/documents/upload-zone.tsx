@@ -29,8 +29,20 @@ export function UploadZone() {
       fd.append("file", file);
       const res = await fetch("/api/documents/upload", { method: "POST", body: fd });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: "unknown" }));
-        setStatus({ kind: "error", message: `${file.name}: ${body.hint ?? body.error}` });
+        const raw = await res.text();
+        let parsed: { error?: string; hint?: string; message?: string } = {};
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          // raw is not JSON — keep as-is for debug
+        }
+        const msg =
+          parsed.hint ||
+          parsed.message ||
+          parsed.error ||
+          raw.slice(0, 200) ||
+          `HTTP ${res.status}`;
+        setStatus({ kind: "error", message: `${file.name} [${res.status}]: ${msg}` });
         return;
       }
     }
