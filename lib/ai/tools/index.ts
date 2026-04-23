@@ -49,15 +49,11 @@ export function buildAgentTools({
 
     get_latest_briefing: tool({
       description:
-        "החזר את הסיכום האחרון (יומי או שבועי) שהופק ע\"י הסוכן. שימוש: שאלות על 'הסיכום של היום', 'מה התחדש'.",
-      inputSchema: z.object({
-        type: z.enum(["daily", "weekly", "any"]).default("any"),
-      }),
-      execute: async ({ type }) => {
-        const where: { agentId: string; type?: string } = { agentId };
-        if (type !== "any") where.type = type;
+        "החזר את הסיכום האחרון שהופק (מכל סוג: daily/weekly/on-demand). שימוש: כל שאלה על 'הסיכום', 'הסיכום של היום', 'מה התחדש'. אל תסנן לפי type אלא אם המשתמש ביקש במפורש סוג.",
+      inputSchema: z.object({}),
+      execute: async () => {
         const b = await prisma.briefing.findFirst({
-          where,
+          where: { agentId },
           orderBy: { createdAt: "desc" },
         });
         if (!b) return { found: false, note: "אין עדיין סיכומים." };
@@ -71,6 +67,28 @@ export function buildAgentTools({
           tasks: b.tasks,
           whatsappDraft: b.whatsappDraft,
         };
+      },
+    }),
+
+    list_recent_briefings: tool({
+      description:
+        "רשימת 10 סיכומים אחרונים (מטא בלבד — לא תוכן מלא). שימוש: שאלות על היסטוריה, 'מה היה בשבוע שעבר'.",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async ({ limit }) => {
+        const rows = await prisma.briefing.findMany({
+          where: { agentId },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: { id: true, type: true, createdAt: true, summary: true },
+        });
+        return rows.map((r) => ({
+          id: r.id,
+          type: r.type,
+          createdAt: r.createdAt,
+          summary: r.summary.slice(0, 200),
+        }));
       },
     }),
 
