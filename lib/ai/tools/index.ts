@@ -11,9 +11,72 @@ export function buildAgentTools({
   userId: string;
 }) {
   return {
+    search_contacts: tool({
+      description:
+        "חפש באנשי הקשר השמורים במערכת (contacts). השתמש לפני מענה על שאלה על מישהו. מחזיר שם, תפקיד, חברה, תגיות, הערות.",
+      inputSchema: z.object({
+        query: z.string().describe("שם, חברה, תפקיד או תגית"),
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async ({ query, limit }) => {
+        const rows = await prisma.contact.findMany({
+          where: {
+            userId,
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { role: { contains: query, mode: "insensitive" } },
+              { company: { contains: query, mode: "insensitive" } },
+              { notes: { contains: query, mode: "insensitive" } },
+              { tags: { has: query } },
+            ],
+          },
+          orderBy: { importance: "desc" },
+          take: limit,
+        });
+        return rows.map((c) => ({
+          id: c.id,
+          name: c.name,
+          role: c.role,
+          company: c.company,
+          phone: c.phone,
+          email: c.email,
+          tags: c.tags,
+          notes: c.notes,
+          importance: c.importance,
+        }));
+      },
+    }),
+
+    get_latest_briefing: tool({
+      description:
+        "החזר את הסיכום האחרון (יומי או שבועי) שהופק ע\"י הסוכן. שימוש: שאלות על 'הסיכום של היום', 'מה התחדש'.",
+      inputSchema: z.object({
+        type: z.enum(["daily", "weekly", "any"]).default("any"),
+      }),
+      execute: async ({ type }) => {
+        const where: { agentId: string; type?: string } = { agentId };
+        if (type !== "any") where.type = type;
+        const b = await prisma.briefing.findFirst({
+          where,
+          orderBy: { createdAt: "desc" },
+        });
+        if (!b) return { found: false, note: "אין עדיין סיכומים." };
+        return {
+          found: true,
+          id: b.id,
+          type: b.type,
+          createdAt: b.createdAt,
+          summary: b.summary,
+          highlights: b.highlights,
+          tasks: b.tasks,
+          whatsappDraft: b.whatsappDraft,
+        };
+      },
+    }),
+
     search_memory: tool({
       description:
-        "חפש בזיכרון ארוך טווח של הסוכן. השתמש לפני מענה לשאלה מהותית.",
+        "חפש בזיכרון ארוך טווח של הסוכן (memories שנשמרו לאורך זמן, לאחר אישור המשתמש).",
       inputSchema: z.object({
         query: z.string().describe("שאילתת חיפוש קצרה בעברית"),
         limit: z.number().int().min(1).max(20).default(5),
@@ -76,7 +139,6 @@ export function buildAgentTools({
         limit: z.number().int().min(1).max(10).default(5),
       }),
       execute: async ({ query, limit }) => {
-        // Fallback: keyword search over extractedText until embedding pipeline ships.
         const docs = await prisma.document.findMany({
           where: {
             userId,
@@ -96,7 +158,7 @@ export function buildAgentTools({
 
     read_gmail: tool({
       description:
-        'שליפת מיילים רלוונטיים מחשבון Gmail המחובר. ה-query בפורמט של Gmail search (לדוגמה: "from:tal@ibi-capital.co.il newer_than:7d").',
+        'שליפת מיילים מחשבון Gmail המחובר. השתמש רק אחרי שלא מצאת תשובה במערכת (search_contacts/search_memory/get_latest_briefing). ה-query בפורמט Gmail search.',
       inputSchema: z.object({
         query: z.string(),
         limit: z.number().int().min(1).max(20).default(10),
