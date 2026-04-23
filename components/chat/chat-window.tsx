@@ -11,12 +11,20 @@ import {
   parseStructuredOutput,
 } from "@/components/chat/structured-output";
 
+type InitialMessage = {
+  id: string;
+  role: "user" | "assistant" | "system" | "tool";
+  parts: Array<{ type: string; text?: string }>;
+};
+
 export function ChatWindow({
   agentSlug,
   initialConversationId,
+  initialMessages,
 }: {
   agentSlug: string;
   initialConversationId?: string;
+  initialMessages?: InitialMessage[];
 }) {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | undefined>(
@@ -24,6 +32,8 @@ export function ChatWindow({
   );
 
   const { messages, sendMessage, status } = useChat({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    messages: initialMessages as any,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ messages }) => ({
