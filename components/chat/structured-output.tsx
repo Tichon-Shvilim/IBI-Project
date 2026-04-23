@@ -4,74 +4,42 @@ import { Copy, Check, ListChecks, Users, FileText, MessageCircle } from "lucide-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  parseStructuredOutput,
+  STRUCTURED_SECTIONS,
+  type ParsedSections,
+} from "@/lib/ai/parse-structured-output";
 
-// Agent outputs a fixed 4-section format (see docs/SPEC.md §6).
-// We detect the Hebrew section headings and render each block with its own style.
+export { parseStructuredOutput };
+export type { ParsedSections };
 
-const SECTIONS = {
-  summary: { key: "תמצית המצב", icon: FileText },
-  highlights: { key: "דגשים מאנשי מפתח", icon: Users },
-  tasks: { key: "אופרטיבי", icon: ListChecks },
-  whatsapp: { key: "טיוטת WhatsApp", icon: MessageCircle },
+const ICONS = {
+  summary: FileText,
+  highlights: Users,
+  tasks: ListChecks,
+  whatsapp: MessageCircle,
 } as const;
-
-type ParsedSections = Partial<Record<keyof typeof SECTIONS, string>>;
-
-export function parseStructuredOutput(text: string): ParsedSections | null {
-  const headingRegex = new RegExp(
-    `\\*\\*(${Object.values(SECTIONS)
-      .map((s) => escape(s.key))
-      .join("|")})[^*]*\\*\\*`,
-    "g"
-  );
-  const matches = [...text.matchAll(headingRegex)];
-  if (matches.length === 0) return null;
-
-  const result: ParsedSections = {};
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
-    const next = matches[i + 1];
-    const headingText = m[1].trim();
-    const start = m.index! + m[0].length;
-    const end = next ? next.index! : text.length;
-    const body = text.slice(start, end).trim();
-
-    const entry = Object.entries(SECTIONS).find(([, cfg]) => cfg.key === headingText);
-    if (!entry) continue;
-    const key = entry[0] as keyof typeof SECTIONS;
-    result[key] = body;
-  }
-  return Object.keys(result).length > 0 ? result : null;
-}
-
-function escape(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 export function StructuredOutput({ sections }: { sections: ParsedSections }) {
   return (
     <div className="space-y-3">
       {sections.summary && (
-        <Section title={SECTIONS.summary.key} icon={SECTIONS.summary.icon}>
+        <Section title={STRUCTURED_SECTIONS.summary} icon={ICONS.summary}>
           <BulletBlock text={sections.summary} />
         </Section>
       )}
       {sections.highlights && (
-        <Section title={SECTIONS.highlights.key} icon={SECTIONS.highlights.icon}>
+        <Section title={STRUCTURED_SECTIONS.highlights} icon={ICONS.highlights}>
           <BulletBlock text={sections.highlights} />
         </Section>
       )}
       {sections.tasks && (
-        <Section title={SECTIONS.tasks.key} icon={SECTIONS.tasks.icon}>
+        <Section title={STRUCTURED_SECTIONS.tasks} icon={ICONS.tasks}>
           <TaskList text={sections.tasks} />
         </Section>
       )}
       {sections.whatsapp && (
-        <Section
-          title={SECTIONS.whatsapp.key}
-          icon={SECTIONS.whatsapp.icon}
-          accent
-        >
+        <Section title={STRUCTURED_SECTIONS.whatsapp} icon={ICONS.whatsapp} accent>
           <WhatsAppBlock text={sections.whatsapp} />
         </Section>
       )}
@@ -94,7 +62,7 @@ function Section({
     <div
       className={cn(
         "rounded-xl border bg-surface px-4 py-3",
-        accent ? "border-accent/40" : "border-border"
+        accent ? "border-accent/40" : "border-border",
       )}
     >
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-2">
@@ -152,10 +120,7 @@ function TaskList({ text }: { text: string }) {
 
 function WhatsAppBlock({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
-  const body = text
-    .replace(/^```[^\n]*\n?/, "")
-    .replace(/\n?```$/, "")
-    .trim();
+  const body = text.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "").trim();
 
   const copy = async () => {
     await navigator.clipboard.writeText(body);
@@ -168,12 +133,7 @@ function WhatsAppBlock({ text }: { text: string }) {
       <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans bg-background rounded-lg p-3 border border-border">
         {body}
       </pre>
-      <Button
-        type="button"
-        onClick={copy}
-        variant={copied ? "secondary" : "primary"}
-        size="sm"
-      >
+      <Button type="button" onClick={copy} variant={copied ? "secondary" : "primary"} size="sm">
         {copied ? <Check /> : <Copy />}
         {copied ? "הועתק" : "העתק ל-WhatsApp"}
       </Button>

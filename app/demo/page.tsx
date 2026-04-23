@@ -1,9 +1,7 @@
 import Link from "next/link";
-import {
-  StructuredOutput,
-  parseStructuredOutput,
-} from "@/components/chat/structured-output";
-import { VerificationPrompt } from "@/components/chat/verification-prompt";
+import { StructuredOutput } from "@/components/chat/structured-output";
+import { parseStructuredOutput } from "@/lib/ai/parse-structured-output";
+import { DemoVerification } from "./demo-verification";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,12 +96,3 @@ export default function DemoPage() {
   );
 }
 
-function DemoVerification() {
-  return (
-    <VerificationPrompt
-      fact={'אלעד בורשטיין אמר שתקציב השיווק לרבעון עומד על 200K ש"ח.'}
-      onApprove={() => {}}
-      onReject={() => {}}
-    />
-  );
-}
