@@ -92,6 +92,39 @@ export function buildAgentTools({
       },
     }),
 
+    search_conversations: tool({
+      description:
+        "חפש בהודעות של שיחות קודמות עם הסוכן. שימוש: שאלות כמו 'על מה דיברנו על X', 'מה אמרתי על Y', שחזור הקשר. מחזיר הודעות עם ההקשר שלהן.",
+      inputSchema: z.object({
+        query: z.string().describe("מילת חיפוש בתוכן ההודעות"),
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async ({ query, limit }) => {
+        const rows = await prisma.message.findMany({
+          where: {
+            conversation: { userId, agentId },
+            content: { contains: query, mode: "insensitive" },
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            role: true,
+            content: true,
+            createdAt: true,
+            conversation: { select: { id: true, title: true } },
+          },
+        });
+        return rows.map((m) => ({
+          conversationId: m.conversation.id,
+          conversationTitle: m.conversation.title,
+          role: m.role,
+          content: m.content.slice(0, 500),
+          createdAt: m.createdAt,
+        }));
+      },
+    }),
+
     search_memory: tool({
       description:
         "חפש בזיכרון ארוך טווח של הסוכן (memories שנשמרו לאורך זמן, לאחר אישור המשתמש).",
