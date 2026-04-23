@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     model: anthropic(agent.model),
     system: agent.systemPrompt,
     messages: modelMessages,
-    tools: buildAgentTools(agent.id),
+    tools: buildAgentTools({ agentId: agent.id, userId: session.user.id }),
     onFinish: async ({ text, usage }) => {
       const lastUser = [...messages].reverse().find((m) => m.role === "user");
       if (lastUser) {
