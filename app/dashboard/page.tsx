@@ -3,21 +3,52 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, Sparkles } from "lucide-react";
+import { Plus, Target, Sparkles, CheckCircle2 } from "lucide-react";
 
 export default async function DashboardHome() {
   const session = await auth();
   const userId = session!.user!.id;
 
-  const agents = await prisma.agent.findMany({
-    where: { userId, isActive: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const [agents, latestBriefing, googleAccount, contactsCount, conversationsCount] =
+    await Promise.all([
+      prisma.agent.findMany({
+        where: { userId, isActive: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.briefing.findFirst({
+        where: { agent: { userId } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.account.findFirst({
+        where: { userId, provider: "google" },
+        select: { scope: true },
+      }),
+      prisma.contact.count({ where: { userId } }),
+      prisma.conversation.count({ where: { userId } }),
+    ]);
 
-  const latestBriefing = await prisma.briefing.findFirst({
-    where: { agent: { userId } },
-    orderBy: { createdAt: "desc" },
-  });
+  const hasGmail = googleAccount?.scope?.includes("gmail.readonly") ?? false;
+  const hasDrive = googleAccount?.scope?.includes("drive.readonly") ?? false;
+  const googleLinked = hasGmail && hasDrive;
+
+  const actions = [
+    {
+      href: "/dashboard/integrations",
+      label: "חבר את Gmail ואת Drive",
+      done: googleLinked,
+    },
+    {
+      href: "/dashboard/contacts",
+      label: "הוסף אנשי מפתח",
+      done: contactsCount >= 5,
+    },
+    {
+      href: "/dashboard/agents",
+      label: "פתח שיחה עם הסוכן האסטרטגי",
+      done: conversationsCount > 0,
+    },
+  ];
+  const pending = actions.filter((a) => !a.done);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
@@ -89,9 +120,16 @@ export default async function DashboardHome() {
             <CardTitle>פעולות מומלצות</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ActionRow href="/dashboard/integrations" label="חבר את Gmail ואת Drive" />
-            <ActionRow href="/dashboard/contacts" label="הוסף אנשי מפתח" />
-            <ActionRow href="/dashboard/agents" label="פתח שיחה עם הסוכן האסטרטגי" />
+            {pending.length === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-success">
+                <CheckCircle2 className="w-5 h-5" />
+                כל הפעולות הראשוניות הושלמו
+              </div>
+            ) : (
+              pending.map((a) => (
+                <ActionRow key={a.href} href={a.href} label={a.label} />
+              ))
+            )}
           </CardContent>
         </Card>
       </section>
