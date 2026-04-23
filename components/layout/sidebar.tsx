@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Bot,
+  Sparkles,
   FileText,
   Users,
   Plug,
@@ -18,6 +19,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "בית", icon: LayoutDashboard },
   { href: "/dashboard/agents", label: "סוכנים", icon: Bot },
+  { href: "/dashboard/briefings", label: "סיכומים", icon: Sparkles },
   { href: "/dashboard/documents", label: "מסמכים", icon: FileText },
   { href: "/dashboard/contacts", label: "אנשי מפתח", icon: Users },
   { href: "/dashboard/integrations", label: "חיבורים", icon: Plug },
